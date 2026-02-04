@@ -267,30 +267,67 @@ if check_password():
         else:
             st.info("No orders found.")
 
-    # --- 5. DATABASE SCHEMA (RELATIONAL DIAGRAM) ---
+   # --- 5. DATABASE SCHEMA (RELATIONAL DIAGRAM) ---
     elif menu == "Database Schema":
         set_header_style("#FF8C00", "🔗 Relational Schema", "Entity Relationship Diagram (ERD)")
         
         st.markdown("""
         This diagram visualizes the **Relational Database Structure** implemented in PostgreSQL.
-        It shows how tables are connected via **Primary Keys (PK)** and **Foreign Keys (FK)**.
+        It highlights **Primary Keys (PK)** with a key icon (🔑) and shows relationships.
         """)
         
-        # Graphviz ile Diyagram Çizimi
+        # Graphviz ile Profesyonel Diyagram
         graph = graphviz.Digraph()
-        graph.attr(rankdir='LR') # Soldan sağa çizim
-        graph.attr('node', shape='box', style='filled', fillcolor='#262730', fontcolor='white', color='#FF4B4B')
-        graph.attr('edge', color='#E6EAF1')
+        graph.attr(rankdir='LR') # Soldan sağa hizalama
+        graph.attr('node', shape='plaintext') # Düz kutu yerine HTML tablo kullanacağız
+        
+        # --- TABLOLAR (HTML FORMATINDA) ---
+        
+        # 1. CATEGORIES TABLE
+        graph.node('Categories', '''<
+        <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4" BGCOLOR="#262730">
+            <TR><TD BGCOLOR="#FF4B4B"><B><FONT COLOR="WHITE">CATEGORIES</FONT></B></TD></TR>
+            <TR><TD ALIGN="LEFT"><FONT COLOR="#FFD700">🔑</FONT> <FONT COLOR="WHITE">category_id (PK)</FONT></TD></TR>
+            <TR><TD ALIGN="LEFT"><FONT COLOR="WHITE">name</FONT></TD></TR>
+            <TR><TD ALIGN="LEFT"><FONT COLOR="WHITE">description</FONT></TD></TR>
+        </TABLE>>''')
 
-        # Tablolar (Nodes)
-        graph.node('Categories', label='CATEGORIES\n--\nPK category_id\nname\ndescription')
-        graph.node('Products', label='PRODUCTS\n--\nPK product_id\nFK category_id\nname\nprice\nstock')
-        graph.node('Customers', label='CUSTOMERS\n--\nPK customer_id\nfull_name\nemail\ncity\nlat, lon')
-        graph.node('Orders', label='ORDERS\n--\nPK order_id\nFK customer_id\ntotal_amount\norder_date')
+        # 2. PRODUCTS TABLE
+        graph.node('Products', '''<
+        <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4" BGCOLOR="#262730">
+            <TR><TD BGCOLOR="#1E90FF"><B><FONT COLOR="WHITE">PRODUCTS</FONT></B></TD></TR>
+            <TR><TD ALIGN="LEFT"><FONT COLOR="#FFD700">🔑</FONT> <FONT COLOR="WHITE">product_id (PK)</FONT></TD></TR>
+            <TR><TD ALIGN="LEFT"><FONT COLOR="#CCCCCC">🔗 category_id (FK)</FONT></TD></TR>
+            <TR><TD ALIGN="LEFT"><FONT COLOR="WHITE">name</FONT></TD></TR>
+            <TR><TD ALIGN="LEFT"><FONT COLOR="WHITE">price</FONT></TD></TR>
+            <TR><TD ALIGN="LEFT"><FONT COLOR="WHITE">stock</FONT></TD></TR>
+        </TABLE>>''')
 
-        # İlişkiler (Edges)
-        graph.edge('Categories', 'Products', label='1 to Many')
-        graph.edge('Customers', 'Orders', label='1 to Many')
+        # 3. CUSTOMERS TABLE
+        graph.node('Customers', '''<
+        <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4" BGCOLOR="#262730">
+            <TR><TD BGCOLOR="#2E8B57"><B><FONT COLOR="WHITE">CUSTOMERS</FONT></B></TD></TR>
+            <TR><TD ALIGN="LEFT"><FONT COLOR="#FFD700">🔑</FONT> <FONT COLOR="WHITE">customer_id (PK)</FONT></TD></TR>
+            <TR><TD ALIGN="LEFT"><FONT COLOR="WHITE">full_name</FONT></TD></TR>
+            <TR><TD ALIGN="LEFT"><FONT COLOR="WHITE">email</FONT></TD></TR>
+            <TR><TD ALIGN="LEFT"><FONT COLOR="WHITE">city</FONT></TD></TR>
+            <TR><TD ALIGN="LEFT"><FONT COLOR="WHITE">lat, lon</FONT></TD></TR>
+        </TABLE>>''')
+
+        # 4. ORDERS TABLE
+        graph.node('Orders', '''<
+        <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4" BGCOLOR="#262730">
+            <TR><TD BGCOLOR="#8A2BE2"><B><FONT COLOR="WHITE">ORDERS</FONT></B></TD></TR>
+            <TR><TD ALIGN="LEFT"><FONT COLOR="#FFD700">🔑</FONT> <FONT COLOR="WHITE">order_id (PK)</FONT></TD></TR>
+            <TR><TD ALIGN="LEFT"><FONT COLOR="#CCCCCC">🔗 customer_id (FK)</FONT></TD></TR>
+            <TR><TD ALIGN="LEFT"><FONT COLOR="WHITE">total_amount</FONT></TD></TR>
+            <TR><TD ALIGN="LEFT"><FONT COLOR="WHITE">order_date</FONT></TD></TR>
+        </TABLE>>''')
+
+        # --- İLİŞKİLER (OKLAR) ---
+        # arrowhead='crow' diyerek o çatallı ilişki okunu yapıyoruz
+        graph.edge('Categories', 'Products', label='1 to Many', color='white', fontcolor='white')
+        graph.edge('Customers', 'Orders', label='1 to Many', color='white', fontcolor='white')
         
         st.graphviz_chart(graph)
         
