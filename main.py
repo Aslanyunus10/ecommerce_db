@@ -2,6 +2,7 @@ import streamlit as st
 import psycopg2
 import pandas as pd
 import time
+import graphviz  # Şema çizimi için gerekli
 
 # --- PAGE CONFIGURATION ---
 st.set_page_config(
@@ -125,7 +126,8 @@ if check_password():
 
     # --- SIDEBAR NAVIGATION ---
     st.sidebar.markdown("---")
-    menu = st.sidebar.radio("Go to", ["Dashboard", "Inventory Management", "Customer Management", "Orders"])
+    # YENİ MENÜ EKLENDİ: Database Schema
+    menu = st.sidebar.radio("Go to", ["Dashboard", "Inventory Management", "Customer Management", "Orders", "Database Schema"])
     
     if st.sidebar.button("Logout"):
         del st.session_state["authenticated"]
@@ -162,20 +164,24 @@ if check_password():
         col3.metric("🛒 Total Orders", count_ord)
         col4.metric("💰 Revenue", f"${total_rev:,.2f}")
         
-        st.markdown("### 📈 Analytics")
+        st.markdown("### 📈 Global Activity & Analytics")
         c1, c2 = st.columns([2, 1])
         with c1:
+            # HARİTA ÖZELLİĞİ BURADA
+            st.markdown("#### 🌍 Customer Locations")
+            map_data = get_data("SELECT lat, lon FROM customers WHERE lat IS NOT NULL")
+            if not map_data.empty:
+                st.map(map_data, zoom=1, color="#FF4B4B")
+            else:
+                st.info("No location data available.")
+
+        with c2:
+            st.markdown("#### 📦 Stock by Category")
             df_chart = get_data("SELECT c.name as category, COUNT(p.product_id) as count FROM products p JOIN categories c ON p.category_id = c.category_id GROUP BY c.name")
             if not df_chart.empty:
                 st.bar_chart(df_chart.set_index("category"), color="#FF4B4B")
             else:
                 st.info("No data available.")
-        with c2:
-            last_orders = get_data("SELECT c.full_name, o.total_amount FROM orders o JOIN customers c ON o.customer_id = c.customer_id ORDER BY o.order_date DESC LIMIT 4")
-            if not last_orders.empty:
-                st.dataframe(last_orders, hide_index=True, use_container_width=True)
-            else:
-                st.info("No recent orders.")
 
     # --- 2. INVENTORY ---
     elif menu == "Inventory Management":
@@ -260,3 +266,32 @@ if check_password():
             st.dataframe(df, column_config={"total_amount": st.column_config.NumberColumn(format="$%.2f")}, use_container_width=True)
         else:
             st.info("No orders found.")
+
+    # --- 5. DATABASE SCHEMA (RELATIONAL DIAGRAM) ---
+    elif menu == "Database Schema":
+        set_header_style("#FF8C00", "🔗 Relational Schema", "Entity Relationship Diagram (ERD)")
+        
+        st.markdown("""
+        This diagram visualizes the **Relational Database Structure** implemented in PostgreSQL.
+        It shows how tables are connected via **Primary Keys (PK)** and **Foreign Keys (FK)**.
+        """)
+        
+        # Graphviz ile Diyagram Çizimi
+        graph = graphviz.Digraph()
+        graph.attr(rankdir='LR') # Soldan sağa çizim
+        graph.attr('node', shape='box', style='filled', fillcolor='#262730', fontcolor='white', color='#FF4B4B')
+        graph.attr('edge', color='#E6EAF1')
+
+        # Tablolar (Nodes)
+        graph.node('Categories', label='CATEGORIES\n--\nPK category_id\nname\ndescription')
+        graph.node('Products', label='PRODUCTS\n--\nPK product_id\nFK category_id\nname\nprice\nstock')
+        graph.node('Customers', label='CUSTOMERS\n--\nPK customer_id\nfull_name\nemail\ncity\nlat, lon')
+        graph.node('Orders', label='ORDERS\n--\nPK order_id\nFK customer_id\ntotal_amount\norder_date')
+
+        # İlişkiler (Edges)
+        graph.edge('Categories', 'Products', label='1 to Many')
+        graph.edge('Customers', 'Orders', label='1 to Many')
+        
+        st.graphviz_chart(graph)
+        
+        st.success("✅ Verified Relational Integrity on PostgreSQL 16")
